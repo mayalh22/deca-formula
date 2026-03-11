@@ -77,7 +77,6 @@
 </div>
 <script>
 const ALL_QUESTIONS = [
-```html
 {q:"Net Present Value (NPV)",opts:["Σ [Cash Flow_t / (1 + r)^t] - Initial Investment","Initial Investment / Annual Cash Inflow","(Net Profit / Investment) × 100","Cash Inflow × (1 + r)^t"],ans:0,exp:"NPV sums each future cash flow discounted by the rate r for each period t, then subtracts the initial investment. Positive NPV means the investment is profitable."},
 {q:"Internal Rate of Return (IRR)",opts:["The discount rate r where NPV = 0","Annual Cash Flow / Initial Investment","Net Income / Total Assets","(Future Value - Present Value) / Present Value"],ans:0,exp:"IRR is the rate r that makes NPV equal zero. You set the NPV formula to 0 and solve for r. If IRR exceeds your required rate, accept the project."},
 {q:"Accounting Rate of Return (ARR)",opts:["Average Annual Net Profit / Initial Investment","Total Cash Inflows / Number of Years","Net Income / Total Equity","Initial Investment / Annual Cash Inflow"],ans:0,exp:"ARR divides average annual net profit (after depreciation) by the initial investment cost. It ignores the time value of money."},
@@ -148,7 +147,7 @@ const ALL_QUESTIONS = [
 {q:"Compound Annual Growth Rate (CAGR)",opts:["(Ending Value / Beginning Value)^(1/n) - 1","(Ending Value - Beginning Value) / Beginning Value","Beginning Value × (1 + r)^n","Ending Value / n - Beginning Value / n"],ans:0,exp:"CAGR gives the steady annual growth rate that would take a beginning value to an ending value over n years. The exponent 1/n takes the nth root to annualize the total growth."},
 {q:"Coupon Payment (annual)",opts:["Coupon Rate × Face Value","Face Value / Maturity","YTM × Face Value","Face Value × (1 + Coupon Rate)"],ans:0,exp:"The annual coupon payment is simply the coupon rate multiplied by the bond's face (par) value. For example, a 10% coupon on a $1,000 bond pays $100 per year."},
 {q:"Current Yield of a Bond",opts:["Annual Coupon Payment / Current Market Price","Coupon Rate × Face Value","YTM × Market Price","Face Value / Market Price"],ans:0,exp:"Current yield compares the bond's annual coupon income to its current market price. Unlike YTM, it ignores capital gains or losses from buying at a discount or premium."},
-```];
+];
 
 let pileX = []; // mastered (indices)
 let pileY = []; // review (indices)
