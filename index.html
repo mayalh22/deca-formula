@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DECA Finance Quiz</title>
+<style>
+  :root {
+    --color-green: #009b47;
+    --color-green-dark: #007a38;
+    --color-red: #c0392b;
+    --color-red-dark: #a93226;
+    --color-blue: #152238;
+    --color-grey: #888;
+    --color-grey-light: #e0e0e0;
+    --color-grey-lighter: #f0f0f0;
+    --color-grey-dark: #555;
+    --color-white: #fff;
+    --color-green-bg: #e6f9ef;
+    --color-red-bg: #fff0f0;
+    --color-green-bg-light: #f0fff6;
+    --color-red-bg-light: #fff5f5;
+    --color-grey-border: #ccc;
+    --color-explanation-bg: #f7f7f7;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Roboto', sans-serif; background: var(--color-white); color: var(--color-blue); min-height: 100vh; }
+  @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+  #app { max-width: 720px; margin: 0 auto; padding: 40px 24px; }
+  #progress-bar-wrap { background: var(--color-grey-light); height: 4px; border-radius: 2px; margin-bottom: 32px; }
+  #progress-bar { background: var(--color-green); height: 4px; border-radius: 2px; transition: width 0.3s; }
+  #meta { font-size: 13px; color: var(--color-grey); margin-bottom: 20px; font-weight: 500; letter-spacing: 0.5px; }
+  #pile-info { font-size: 13px; color: var(--color-grey-dark); margin-bottom: 12px; display: flex; gap: 16px; }
+  .pile-badge { padding: 3px 10px; border-radius: 12px; font-weight: 700; font-size: 12px; }
+  .pile-x { background: var(--color-green-bg); color: var(--color-green); border: 1px solid var(--color-green); }
+  .pile-y { background: var(--color-red-bg); color: var(--color-red); border: 1px solid var(--color-red); }
+  .pile-u { background: var(--color-grey-lighter); color: var(--color-grey); border: 1px solid var(--color-grey-border); }
+  #question { font-size: 18px; font-weight: 500; line-height: 1.5; margin-bottom: 28px; color: var(--color-blue); }
+  .opt { display: block; width: 100%; text-align: left; background: var(--color-white); border: 2px solid var(--color-grey-light); color: var(--color-blue); padding: 14px 18px; margin-bottom: 10px; font-size: 15px; font-family: 'Roboto', sans-serif; cursor: pointer; border-radius: 4px; transition: border-color 0.15s; }
+  .opt:hover:not(:disabled) { border-color: var(--color-green); }
+  .opt.correct { border-color: var(--color-green); background: var(--color-green-bg-light); color: var(--color-blue); }
+  .opt.wrong { border-color: var(--color-red); background: var(--color-red-bg-light); color: var(--color-blue); }
+  .opt:disabled { cursor: default; }
+  #explanation { display: none; background: var(--color-explanation-bg); border-left: 4px solid var(--color-green); padding: 16px 18px; margin-top: 20px; font-size: 14px; line-height: 1.6; color: #333; border-radius: 0 4px 4px 0; }
+  #explanation.wrong-exp { border-left-color: var(--color-red); }
+  #wrong-choice-note { display: none; background: var(--color-red-bg-light); border-left: 4px solid var(--color-red); padding: 12px 18px; margin-top: 12px; font-size: 14px; line-height: 1.6; color: #333; border-radius: 0 4px 4px 0; }
+  #next-btn { display: none; margin-top: 24px; background: var(--color-green); color: var(--color-white); border: none; padding: 14px 32px; font-size: 15px; font-family: 'Roboto', sans-serif; font-weight: 700; cursor: pointer; border-radius: 4px; letter-spacing: 0.5px; }
+  #next-btn:hover { background: var(--color-green-dark); }
+  #round-complete { display: none; text-align: center; padding: 60px 0; }
+  #round-complete h2 { font-size: 28px; font-weight: 700; color: var(--color-blue); margin-bottom: 8px; }
+  #round-complete p { font-size: 16px; color: var(--color-grey-dark); margin-bottom: 32px; }
+  #continue-btn { background: var(--color-red); color: var(--color-white); border: none; padding: 14px 36px; font-size: 15px; font-family: 'Roboto', sans-serif; font-weight: 700; cursor: pointer; border-radius: 4px; }
+  #continue-btn:hover { background: var(--color-red-dark); }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="quiz-screen">
+    <div id="progress-bar-wrap"><div id="progress-bar"></div></div>
+    <div id="pile-info">
+      <span class="pile-badge pile-x">✓ Mastered: <span id="count-x">0</span></span>
+      <span class="pile-badge pile-y">✗ Review: <span id="count-y">0</span></span>
+      <span class="pile-badge pile-u">? Unseen: <span id="count-u">0</span></span>
+    </div>
+    <div id="meta"></div>
+    <div id="question"></div>
+    <div id="options"></div>
+    <div id="wrong-choice-note"></div>
+    <div id="explanation"></div>
+    <button id="next-btn">Next →</button>
+  </div>
+  <div id="round-complete">
+    <h2 id="round-title"></h2>
+    <p id="round-sub"></p>
+    <button id="continue-btn">Keep Going →</button>
+  </div>
+</div>
+<script>
+const ALL_QUESTIONS = [
+```html
+{q:"Net Present Value (NPV)",opts:["Σ [Cash Flow_t / (1 + r)^t] - Initial Investment","Initial Investment / Annual Cash Inflow","(Net Profit / Investment) × 100","Cash Inflow × (1 + r)^t"],ans:0,exp:"NPV sums each future cash flow discounted by the rate r for each period t, then subtracts the initial investment. Positive NPV means the investment is profitable."},
+{q:"Internal Rate of Return (IRR)",opts:["The discount rate r where NPV = 0","Annual Cash Flow / Initial Investment","Net Income / Total Assets","(Future Value - Present Value) / Present Value"],ans:0,exp:"IRR is the rate r that makes NPV equal zero. You set the NPV formula to 0 and solve for r. If IRR exceeds your required rate, accept the project."},
+{q:"Accounting Rate of Return (ARR)",opts:["Average Annual Net Profit / Initial Investment","Total Cash Inflows / Number of Years","Net Income / Total Equity","Initial Investment / Annual Cash Inflow"],ans:0,exp:"ARR divides average annual net profit (after depreciation) by the initial investment cost. It ignores the time value of money."},
+{q:"Payback Period",opts:["Initial Investment / Annual Cash Inflow","Annual Cash Inflow / Initial Investment","NPV / Annual Cash Flow","Initial Investment × (1 + r)^t"],ans:0,exp:"The payback period is how many years it takes to recover the initial investment. Divide the total investment by the annual cash inflow. Shorter is better."},
+{q:"Discounted Payback Period (single period cash flow)",opts:["Cash Flow_t / (1 + r)^t","Cash Flow_t × (1 + r)^t","Initial Investment / (1 + r)","Annual Cash Flow / r"],ans:0,exp:"Each period's cash inflow is discounted by (1 + r)^t to account for the time value of money. You accumulate these discounted inflows until they equal the initial investment."},
+{q:"Price of a Bond given YTM",opts:["Σ [Coupon / (1 + YTM)^t] + [Face Value / (1 + YTM)^n]","Coupon × n + Face Value","Face Value / (1 + YTM)^n","Coupon / YTM"],ans:0,exp:"Each coupon payment is discounted back by (1+YTM)^t for its respective period, then the face value (principal) is discounted back at the final period n. Sum everything together."},
+{q:"Gordon Growth Model (Stock Price)",opts:["D1 / (r - g)","D0 × (1 + g)","r - g / D1","D1 × (r - g)"],ans:0,exp:"P = D1 / (r - g), where D1 is next year's expected dividend, r is the required rate of return, and g is the constant dividend growth rate. Only valid when r > g."},
+{q:"Gordon Growth Model: Next Dividend (D1)",opts:["D0 × (1 + g)","D0 / (1 + g)","D0 + g","D0 × g"],ans:0,exp:"D1 is the dividend expected next period. Multiply the current dividend D0 by (1 + g) where g is the constant growth rate."},
+{q:"Discounted Cash Flow (DCF) / Present Value of a single future cash flow",opts:["Future Cash Flow / (1 + r)^n","Future Cash Flow × (1 + r)^n","Future Cash Flow - (r × n)","Future Cash Flow / r"],ans:0,exp:"DCF discounts a future cash flow back to today's value by dividing by (1 + r)^n, where r is the discount rate and n is the number of periods."},
+{q:"Expected Return (probability-weighted)",opts:["Σ (Probability_i × Return_i)","Total Gain / Total Investment","(Best Return + Worst Return) / 2","Return / Standard Deviation"],ans:0,exp:"Multiply each possible return by its probability and sum all results. Losses are negative returns, so they reduce the expected value. Example: 0.5×10% + 0.25×30% - 0.25×20% = 7.5%."},
+{q:"Cash Conversion Cycle (CCC)",opts:["DIO + DSO - DPO","DIO - DSO + DPO","DSO + DPO - DIO","DIO × DSO / DPO"],ans:0,exp:"CCC = Days Inventory Outstanding + Days Sales Outstanding - Days Payable Outstanding. It measures how many days cash is tied up in operations before being recovered."},
+{q:"Days Inventory Outstanding (DIO)",opts:["(Inventory / COGS) × 365","(COGS / Inventory) × 365","Inventory / Revenue × 365","COGS / 365"],ans:0,exp:"DIO measures how many days inventory sits before being sold. Divide ending inventory by COGS then multiply by 365 to convert to days."},
+{q:"Days Sales Outstanding (DSO)",opts:["(Accounts Receivable / Revenue) × 365","(Revenue / Accounts Receivable) × 365","Accounts Receivable / COGS × 365","Revenue / 365"],ans:0,exp:"DSO measures how many days it takes to collect payment after a sale. Divide accounts receivable by total revenue and multiply by 365."},
+{q:"Days Payable Outstanding (DPO)",opts:["(Accounts Payable / COGS) × 365","(COGS / Accounts Payable) × 365","Accounts Payable / Revenue × 365","Revenue / Accounts Payable × 365"],ans:0,exp:"DPO measures how many days a company takes to pay its suppliers. Divide accounts payable by COGS and multiply by 365. Higher DPO means the company holds cash longer."},
+{q:"Weighted Average Cost of Capital (WACC)",opts:["(E/V × Re) + (D/V × Rd × (1 - Tax Rate))","(Debt × Re) + (Equity × Rd)","Net Income / Total Capital","(Re + Rd) / 2"],ans:0,exp:"WACC weights cost of equity (Re) by equity proportion (E/V) and after-tax cost of debt (Rd×(1−T)) by debt proportion (D/V), where V = E + D. It is the minimum return needed to satisfy all investors."},
+{q:"Capital Asset Pricing Model (CAPM) — Cost of Equity",opts:["Rf + β × (Rm - Rf)","Rf × β + Rm","(Rm - Rf) / β","β × Rm - Rf"],ans:0,exp:"CAPM states that the expected return equals the risk-free rate (Rf) plus beta (β) times the market risk premium (Rm - Rf). Beta measures the asset's sensitivity to market movements."},
+{q:"Cost of Debt (after-tax)",opts:["Rd × (1 - Tax Rate)","Rd + Tax Rate","Rd / (1 - Tax Rate)","Rd - Tax Rate"],ans:0,exp:"Because interest is tax-deductible, the true cost of debt is reduced by the tax shield. Multiply the pre-tax cost of debt by (1 - tax rate)."},
+{q:"Straight-Line Depreciation",opts:["(Cost - Residual Value) / Useful Life","Cost / Useful Life","Cost × Depreciation Rate","(Cost - Residual Value) × Depreciation Rate"],ans:0,exp:"Straight-line depreciation spreads the depreciable amount (cost minus residual value) evenly over the asset's useful life. Annual expense is constant every year."},
+{q:"Declining Balance Depreciation (annual expense)",opts:["Net Book Value × Depreciation Rate","(Cost - Residual Value) × Depreciation Rate","Cost × Depreciation Rate","Net Book Value / Useful Life"],ans:0,exp:"Multiply the current net book value (NBV) by the fixed depreciation rate each year. Because NBV decreases each year, so does the depreciation expense. Never depreciates below residual value."},
+{q:"Net Book Value (NBV) after depreciation",opts:["Previous NBV - Depreciation Expense","Cost + Depreciation Expense","Cost - Residual Value","Previous NBV + Depreciation Expense"],ans:0,exp:"NBV is the carrying value of an asset on the balance sheet. Subtract the current period's depreciation expense from the opening NBV to get closing NBV."},
+{q:"Gain or Loss on Sale of Asset",opts:["Sale Proceeds - Net Book Value at Time of Sale","Sale Proceeds - Original Cost","Original Cost - Accumulated Depreciation","Sale Proceeds - Residual Value"],ans:0,exp:"Subtract the asset's net book value at the time of sale from the proceeds received. A positive result is a gain; a negative result is a loss. Reported under non-operating income on the income statement."},
+{q:"Current Ratio",opts:["Current Assets / Current Liabilities","Current Liabilities / Current Assets","Total Assets / Total Liabilities","Net Income / Current Assets"],ans:0,exp:"The current ratio measures short-term liquidity. A ratio above 1 means current assets exceed current liabilities, indicating the company can cover short-term obligations."},
+{q:"Quick Ratio (Acid-Test Ratio)",opts:["(Current Assets - Inventory) / Current Liabilities","Current Assets / Current Liabilities","Cash / Current Liabilities","(Cash + Receivables) / Total Liabilities"],ans:0,exp:"The quick ratio excludes inventory from current assets since inventory is less liquid. It is a stricter measure of liquidity than the current ratio."},
+{q:"Debt-to-Equity Ratio",opts:["Total Debt / Total Equity","Total Equity / Total Debt","Total Assets / Total Equity","Net Income / Total Equity"],ans:0,exp:"Measures financial leverage by comparing total debt to shareholders' equity. A higher ratio means the company is more reliant on debt financing, increasing financial risk."},
+{q:"Debt-to-Assets Ratio",opts:["Total Debt / Total Assets","Total Assets / Total Debt","Net Income / Total Assets","Total Equity / Total Assets"],ans:0,exp:"Shows what proportion of assets are financed by debt. A ratio closer to 1 means most assets are debt-financed, indicating higher leverage and risk."},
+{q:"Return on Assets (ROA)",opts:["Net Income / Total Assets","Net Income / Total Equity","Total Assets / Net Income","Gross Profit / Total Assets"],ans:0,exp:"ROA measures how efficiently a company uses its assets to generate profit. Higher ROA indicates more efficient asset use."},
+{q:"Return on Equity (ROE)",opts:["Net Income / Shareholders' Equity","Net Income / Total Assets","Total Equity / Net Income","Operating Income / Shareholders' Equity"],ans:0,exp:"ROE measures the return generated on shareholders' investment. It reflects how well management uses equity financing to generate profit."},
+{q:"Gross Profit Margin",opts:["(Revenue - COGS) / Revenue","Net Income / Revenue","COGS / Revenue","Operating Income / Revenue"],ans:0,exp:"Gross profit margin shows the percentage of revenue remaining after subtracting the cost of goods sold. A higher margin means more revenue is available to cover operating expenses."},
+{q:"Net Profit Margin",opts:["Net Income / Revenue","Gross Profit / Revenue","Operating Income / Revenue","Net Income / Total Assets"],ans:0,exp:"Net profit margin shows what percentage of total revenue becomes net income after all expenses, taxes, and interest. It is the bottom-line profitability ratio."},
+{q:"Asset Turnover Ratio",opts:["Revenue / Total Assets","Total Assets / Revenue","Net Income / Total Assets","Revenue / Net Income"],ans:0,exp:"Asset turnover measures how efficiently a company generates revenue from its assets. A higher ratio means better utilization of assets."},
+{q:"Inventory Turnover Ratio",opts:["COGS / Average Inventory","Revenue / Average Inventory","Average Inventory / COGS","Net Income / Inventory"],ans:0,exp:"Inventory turnover shows how many times inventory is sold and replaced in a period. Higher turnover generally indicates efficient inventory management and strong sales."},
+{q:"Earnings Per Share (EPS)",opts:["(Net Income - Preferred Dividends) / Weighted Average Shares Outstanding","Net Income / Total Assets","Dividends / Shares Outstanding","Operating Income / Shares Outstanding"],ans:0,exp:"EPS measures the portion of net income attributable to each share of common stock. After subtracting preferred dividends, divide by the weighted average shares outstanding."},
+{q:"Price-to-Earnings Ratio (P/E Ratio)",opts:["Market Price per Share / EPS","EPS / Market Price per Share","Net Income / Market Capitalization","Revenue / Shares Outstanding"],ans:0,exp:"The P/E ratio compares a stock's market price to its earnings per share. A higher P/E suggests investors expect higher future growth or are paying a premium."},
+{q:"Dividend Yield",opts:["Annual Dividend per Share / Market Price per Share","Market Price per Share / Annual Dividend per Share","Net Income / Dividends Paid","Dividends Paid / Net Income"],ans:0,exp:"Dividend yield expresses annual dividend payments as a percentage of the current stock price. It tells investors the cash return they receive relative to the share price."},
+{q:"Interest Coverage Ratio",opts:["EBIT / Interest Expense","Net Income / Interest Expense","Total Debt / EBIT","Interest Expense / EBIT"],ans:0,exp:"The interest coverage ratio measures how easily a company can pay interest on its debt from operating earnings (EBIT). A ratio below 1 means the company cannot cover interest from operations."},
+{q:"Operating Cash Flow Ratio",opts:["Operating Cash Flow / Current Liabilities","Net Income / Current Liabilities","Operating Cash Flow / Total Debt","Current Assets / Operating Cash Flow"],ans:0,exp:"This liquidity ratio uses actual cash generated from operations rather than accounting income to assess the ability to cover short-term liabilities. More conservative than the current ratio."},
+{q:"Free Cash Flow (FCF)",opts:["Operating Cash Flow - Capital Expenditures","Net Income - Dividends","Revenue - Operating Expenses","EBIT - Taxes"],ans:0,exp:"FCF is the cash remaining after a company pays for its operating expenses and capital expenditures. It represents cash available to investors, creditors, and for growth opportunities."},
+{q:"Break-Even Point (in units)",opts:["Fixed Costs / (Selling Price per Unit - Variable Cost per Unit)","Total Costs / Selling Price","Fixed Costs / Selling Price per Unit","Variable Costs / Contribution Margin"],ans:0,exp:"The break-even point is the number of units where total revenue equals total costs. Divide total fixed costs by the contribution margin per unit (price minus variable cost)."},
+{q:"Contribution Margin per Unit",opts:["Selling Price per Unit - Variable Cost per Unit","Revenue - Fixed Costs","Net Income / Units Sold","Selling Price - Total Cost per Unit"],ans:0,exp:"Contribution margin is the amount each unit sale contributes toward covering fixed costs and then generating profit. It equals selling price minus all variable costs per unit."},
+{q:"Future Value (FV) of a single sum",opts:["PV × (1 + r)^n","PV / (1 + r)^n","PV + (r × n)","PV × r × n"],ans:0,exp:"Future value compounds a present amount at rate r over n periods. This is the inverse of discounting/NPV. The exponent n accounts for compounding."},
+{q:"Present Value (PV) of a single sum",opts:["FV / (1 + r)^n","FV × (1 + r)^n","FV - (r × n)","FV / (r × n)"],ans:0,exp:"Present value discounts a future sum back to today using rate r over n periods. This is the foundation of all DCF, NPV, and bond pricing formulas."},
+{q:"Accumulated Depreciation",opts:["Sum of all depreciation expense to date","Cost - Residual Value","NBV × Depreciation Rate","Cost / Useful Life × Years"],ans:0,exp:"Accumulated depreciation is the total depreciation recorded on an asset since purchase. It is a contra-asset account on the balance sheet subtracted from the asset's gross cost."},
+{q:"Depreciable Amount (Depreciable Base)",opts:["Cost - Residual Value","Cost / Useful Life","Cost × Depreciation Rate","Cost + Residual Value"],ans:0,exp:"The depreciable amount is the total value that will be depreciated over the asset's useful life. It excludes the residual (salvage) value since that is expected to be recovered at disposal."},
+{q:"Units of Production Depreciation (rate per unit)",opts:["(Cost - Residual Value) / Total Estimated Units","Cost / Total Estimated Units","(Cost - Residual Value) / Useful Life","NBV / Total Estimated Units"],ans:0,exp:"Units of production depreciation bases expense on actual usage rather than time. First find the rate per unit, then multiply by actual units produced that period."},
+{q:"Units of Production Depreciation (annual expense)",opts:["Depreciation Rate per Unit × Actual Units Produced","(Cost - Residual Value) / Useful Life","NBV × Depreciation Rate","Cost / Actual Units Produced"],ans:0,exp:"Multiply the per-unit depreciation rate by however many units were actually produced that year. Expense varies each period based on output."},
+{q:"Impairment Loss",opts:["Carrying Amount - Recoverable Amount","Cost - Fair Market Value","NBV - Residual Value","Accumulated Depreciation - NBV"],ans:0,exp:"An impairment loss is recorded when an asset's carrying (book) value exceeds its recoverable amount (higher of fair market value and value in use). The asset is written down to its recoverable amount."},
+{q:"Recoverable Amount (for impairment testing)",opts:["Higher of Fair Value Less Costs to Sell and Value in Use","Lower of Fair Value and Carrying Amount","Fair Value - Carrying Amount","Net Book Value - Accumulated Depreciation"],ans:0,exp:"Under IFRS, recoverable amount is the higher of an asset's fair value less costs to sell and its value in use. If carrying amount exceeds this, an impairment loss is recognized."},
+{q:"Working Capital",opts:["Current Assets - Current Liabilities","Total Assets - Total Liabilities","Current Assets / Current Liabilities","Total Equity - Current Liabilities"],ans:0,exp:"Working capital measures short-term financial health and liquidity. Positive working capital means the company can cover its short-term obligations with short-term assets."},
+{q:"Total Asset Turnover",opts:["Net Sales / Average Total Assets","Net Income / Total Assets","Total Assets / Net Sales","Revenue / Current Assets"],ans:0,exp:"Total asset turnover measures how efficiently all assets generate sales. Average total assets is used to smooth out changes during the period."},
+{q:"Fixed Asset Turnover",opts:["Net Sales / Average Net Fixed Assets","Net Income / Fixed Assets","Fixed Assets / Net Sales","Revenue / Total Assets"],ans:0,exp:"Fixed asset turnover isolates how efficiently long-term (fixed) assets like property and equipment generate revenue. Higher is generally better."},
+{q:"Receivables Turnover Ratio",opts:["Net Credit Sales / Average Accounts Receivable","Revenue / Total Assets","Accounts Receivable / Revenue","Net Income / Accounts Receivable"],ans:0,exp:"Receivables turnover measures how many times per period a company collects its average accounts receivable. Higher turnover means faster cash collection."},
+{q:"Return on Investment (ROI)",opts:["(Net Profit / Cost of Investment) × 100","Net Income / Total Assets","Revenue / Investment","Net Profit / Revenue × 100"],ans:0,exp:"ROI measures the percentage return earned on an investment relative to its cost. It is a broad profitability measure used to evaluate efficiency of an investment."},
+{q:"Operating Profit Margin (EBIT Margin)",opts:["EBIT / Revenue","Net Income / Revenue","Gross Profit / Revenue","EBITDA / Revenue"],ans:0,exp:"Operating profit margin measures earnings before interest and taxes as a percentage of revenue. It reflects profitability from core operations, excluding financing and tax effects."},
+{q:"EBITDA",opts:["Net Income + Interest + Taxes + Depreciation + Amortization","Net Income + Depreciation + Amortization","Operating Income + Depreciation","Revenue - Operating Expenses"],ans:0,exp:"EBITDA adds back non-cash charges (depreciation, amortization) and financing costs (interest, taxes) to net income. It approximates operating cash generation and is used for comparing companies."},
+{q:"Equity Multiplier",opts:["Total Assets / Total Equity","Total Equity / Total Assets","Total Debt / Total Equity","Net Income / Total Equity"],ans:0,exp:"The equity multiplier measures financial leverage — how much of total assets are financed by equity. It is a component of the DuPont analysis formula."},
+{q:"DuPont Formula (ROE expanded)",opts:["Net Profit Margin × Asset Turnover × Equity Multiplier","ROA × Debt-to-Equity","Net Income / Equity","ROA / Equity Multiplier"],ans:0,exp:"DuPont breaks ROE into three drivers: profitability (net margin), efficiency (asset turnover), and leverage (equity multiplier). ROE = (Net Income/Revenue) × (Revenue/Assets) × (Assets/Equity)."},
+{q:"Degree of Operating Leverage (DOL)",opts:["Contribution Margin / EBIT","EBIT / Net Income","Fixed Costs / Variable Costs","Revenue / Fixed Costs"],ans:0,exp:"DOL measures how sensitive operating income is to a change in sales. A higher DOL means fixed costs are a larger portion of total costs, amplifying profit swings when revenue changes."},
+{q:"Times Interest Earned (same as Interest Coverage Ratio)",opts:["EBIT / Interest Expense","Net Income / Interest Expense","Revenue / Interest Expense","Operating Cash Flow / Interest Expense"],ans:0,exp:"Times interest earned (TIE) and interest coverage ratio are the same metric. EBIT divided by interest expense shows how many times over a company can pay its interest obligations."},
+{q:"Dividend Payout Ratio",opts:["Dividends per Share / EPS","Net Income / Dividends Paid","Dividends Paid / Total Equity","EPS / Dividends per Share"],ans:0,exp:"The dividend payout ratio shows what proportion of earnings is distributed to shareholders as dividends. The remainder (retention ratio) is reinvested in the business."},
+{q:"Retention Ratio (Plowback Ratio)",opts:["1 - Dividend Payout Ratio","Dividends per Share / EPS","Net Income / Dividends","Retained Earnings / Revenue"],ans:0,exp:"The retention ratio is the proportion of net income retained in the business rather than paid out as dividends. It equals 1 minus the dividend payout ratio."},
+{q:"Sustainable Growth Rate",opts:["ROE × Retention Ratio","ROE × Dividend Payout Ratio","Net Income / Total Equity","ROA × Equity Multiplier"],ans:0,exp:"The sustainable growth rate is how fast a company can grow using only retained earnings without issuing new equity or changing its financial structure. It equals ROE multiplied by the retention ratio."},
+{q:"Price-to-Book Ratio (P/B)",opts:["Market Price per Share / Book Value per Share","EPS / Book Value per Share","Net Income / Market Capitalization","Book Value / Market Price"],ans:0,exp:"The P/B ratio compares a stock's market value to its accounting book value. A ratio above 1 means the market values the company above its net assets, often reflecting intangible value or growth expectations."},
+{q:"Book Value per Share",opts:["(Total Equity - Preferred Equity) / Common Shares Outstanding","Total Assets / Shares Outstanding","Net Income / Shares Outstanding","Total Equity / Total Assets"],ans:0,exp:"Book value per share is the net asset value attributable to each common share. Subtract preferred equity from total equity, then divide by common shares outstanding."},
+{q:"Cash Ratio",opts:["(Cash + Cash Equivalents) / Current Liabilities","Current Assets / Current Liabilities","Cash / Total Assets","Cash / Total Liabilities"],ans:0,exp:"The cash ratio is the most conservative liquidity ratio, using only cash and cash equivalents. It shows the ability to cover current liabilities with immediately available funds."},
+{q:"Net Profit (formula from income statement)",opts:["Revenue - COGS - Operating Expenses - Interest - Taxes","Revenue - COGS","Revenue - Operating Expenses","Gross Profit - Taxes"],ans:0,exp:"Net profit is the bottom line after subtracting all costs from revenue: cost of goods sold, operating expenses, interest expense, and taxes. Also called net income."},
+{q:"Gross Profit",opts:["Revenue - Cost of Goods Sold (COGS)","Revenue - All Expenses","Net Income + Taxes","Operating Income + Depreciation"],ans:0,exp:"Gross profit is the first level of profitability, showing revenue remaining after subtracting the direct costs of producing goods or services (COGS)."},
+{q:"Operating Income (EBIT)",opts:["Gross Profit - Operating Expenses","Revenue - COGS","Net Income + Interest + Taxes","Gross Profit - Taxes"],ans:0,exp:"Operating income equals gross profit minus all operating expenses (like SG&A and depreciation). It represents profit from core business operations before financing costs and taxes."},
+{q:"Compound Annual Growth Rate (CAGR)",opts:["(Ending Value / Beginning Value)^(1/n) - 1","(Ending Value - Beginning Value) / Beginning Value","Beginning Value × (1 + r)^n","Ending Value / n - Beginning Value / n"],ans:0,exp:"CAGR gives the steady annual growth rate that would take a beginning value to an ending value over n years. The exponent 1/n takes the nth root to annualize the total growth."},
+{q:"Coupon Payment (annual)",opts:["Coupon Rate × Face Value","Face Value / Maturity","YTM × Face Value","Face Value × (1 + Coupon Rate)"],ans:0,exp:"The annual coupon payment is simply the coupon rate multiplied by the bond's face (par) value. For example, a 10% coupon on a $1,000 bond pays $100 per year."},
+{q:"Current Yield of a Bond",opts:["Annual Coupon Payment / Current Market Price","Coupon Rate × Face Value","YTM × Market Price","Face Value / Market Price"],ans:0,exp:"Current yield compares the bond's annual coupon income to its current market price. Unlike YTM, it ignores capital gains or losses from buying at a discount or premium."},
+```];
+
+let pileX = []; // mastered (indices)
+let pileY = []; // review (indices)
+let pileU = []; // unseen (indices)
+let current = null; // current question index
+let answered = false;
+let queue = []; // current working queue
+let queueSource = ''; // 'unseen' or 'review'
+
+const STORAGE_KEY = 'deca-quiz-state-v1';
+
+function saveState() {
+  const state = {
+    pileX,
+    pileY,
+    pileU,
+    current,
+    queue,
+    queueSource
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function loadState() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return false;
+  try {
+    const state = JSON.parse(raw);
+    if (!state || !Array.isArray(state.pileX) || !Array.isArray(state.pileY) || !Array.isArray(state.pileU)) return false;
+    pileX = state.pileX;
+    pileY = state.pileY;
+    pileU = state.pileU;
+    current = state.current;
+    queue = state.queue || [];
+    queueSource = state.queueSource || 'unseen';
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function initPiles() {
+  if (!loadState()) {
+    pileX = [];
+    pileY = [];
+    pileU = ALL_QUESTIONS.map((_, i) => i);
+    buildQueue();
+    saveState();
+  }
+}
+
+function buildQueue() {
+  // Prefer unseen, but if empty use pileY
+  if (pileU.length > 0) {
+    queue = shuffle([...pileU]);
+    queueSource = 'unseen';
+  } else if (pileY.length > 0) {
+    queue = shuffle([...pileY]);
+    queueSource = 'review';
+  } else {
+    // All mastered—shouldn't happen but just in case
+    queue = shuffle([...pileX]);
+    queueSource = 'mastered';
+  }
+  saveState();
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function nextQuestion() {
+  if (queue.length === 0) {
+    // Round complete—show message then rebuild
+    showRoundComplete();
+    return;
+  }
+  current = queue.shift();
+  render();
+}
+
+function render() {
+  const q = ALL_QUESTIONS[current];
+  const total = ALL_QUESTIONS.length;
+  const done = pileX.length + pileY.length + (ALL_QUESTIONS.length - pileU.length - pileX.length - pileY.length);
+
+  document.getElementById('count-x').textContent = pileX.length;
+  document.getElementById('count-y').textContent = pileY.length;
+  document.getElementById('count-u').textContent = pileU.length;
+
+  const progress = pileX.length / total;
+  document.getElementById('progress-bar').style.width = `${progress * 100}%`;
+
+  const src = queueSource === 'review' ? ' · Reviewing Incorrect' : queueSource === 'mastered' ? ' · All Mastered!' : '';
+  document.getElementById('meta').textContent = `Question from ${queueSource === 'review' ? 'Review Pile' : queueSource === 'mastered' ? 'Mastered Pile' : 'Unseen Pile'}${src}`;
+
+  document.getElementById('question').textContent = q.q;
+  const opts = document.getElementById('options');
+  opts.innerHTML = '';
+  q.opts.forEach((o, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.textContent = `${['A','B','C','D'][i]}. ${o}`;
+    btn.onclick = () => choose(i);
+    opts.appendChild(btn);
+  });
+  document.getElementById('explanation').style.display = 'none';
+  document.getElementById('wrong-choice-note').style.display = 'none';
+  document.getElementById('next-btn').style.display = 'none';
+  answered = false;
+}
+
+function choose(i) {
+  if (answered) return;
+  answered = true;
+  const q = ALL_QUESTIONS[current];
+  const btns = document.querySelectorAll('.opt');
+  btns.forEach(b => b.disabled = true);
+  const correct = q.ans;
+  btns[correct].classList.add('correct');
+
+  const exp = document.getElementById('explanation');
+
+  if (i === correct) {
+    // Move to pile X
+    pileU = pileU.filter(x => x !== current);
+    pileY = pileY.filter(x => x !== current);
+    if (!pileX.includes(current)) pileX.push(current);
+
+    exp.className = '';
+    exp.style.display = 'block';
+    exp.innerHTML = `<strong>✓ Correct → Mastered Pile.</strong> ${q.exp}`;
+    document.getElementById('wrong-choice-note').style.display = 'none';
+  } else {
+    btns[i].classList.add('wrong');
+
+    // Move to pile Y
+    pileU = pileU.filter(x => x !== current);
+    pileX = pileX.filter(x => x !== current);
+    if (!pileY.includes(current)) pileY.push(current);
+
+    // Show why chosen answer is wrong
+    const wrongNote = document.getElementById('wrong-choice-note');
+    wrongNote.style.display = 'block';
+    wrongNote.innerHTML = `<strong>You chose: ${['A','B','C','D'][i]}. ${q.opts[i]}</strong> — This is incorrect.`;
+
+    exp.className = 'wrong-exp';
+    exp.style.display = 'block';
+    exp.innerHTML = `<strong>✗ Incorrect → Review Pile.</strong> Correct answer: <strong>${['A','B','C','D'][correct]}. ${q.opts[correct]}</strong><br><br>${q.exp}`;
+  }
+
+  document.getElementById('count-x').textContent = pileX.length;
+  document.getElementById('count-y').textContent = pileY.length;
+  document.getElementById('count-u').textContent = pileU.length;
+  document.getElementById('progress-bar').style.width = `${(pileX.length / ALL_QUESTIONS.length) * 100}%`;
+
+  document.getElementById('next-btn').style.display = 'inline-block';
+  saveState();
+}
+
+function showRoundComplete() {
+  document.getElementById('quiz-screen').style.display = 'none';
+  const rc = document.getElementById('round-complete');
+  rc.style.display = 'block';
+
+  if (pileU.length === 0 && pileY.length === 0) {
+    document.getElementById('round-title').textContent = 'All Questions Mastered!';
+    document.getElementById('round-sub').textContent = `You've mastered all ${ALL_QUESTIONS.length} questions! Keep reviewing to stay sharp.`;
+    document.getElementById('continue-btn').textContent = 'Review All Again →';
+  } else if (pileU.length === 0) {
+    document.getElementById('round-title').textContent = 'All Unseen Questions Done!';
+    document.getElementById('round-sub').textContent = `Mastered: ${pileX.length} | Review pile: ${pileY.length} questions to retry.`;
+    document.getElementById('continue-btn').textContent = 'Start Review Pile →';
+  } else {
+    document.getElementById('round-title').textContent = 'Review Round Complete!';
+    document.getElementById('round-sub').textContent = `Mastered: ${pileX.length} | Still in review: ${pileY.length} | Unseen: ${pileU.length}`;
+    document.getElementById('continue-btn').textContent = 'Continue →';
+  }
+  saveState();
+}
+
+document.getElementById('next-btn').onclick = () => {
+  nextQuestion();
+  saveState();
+};
+
+document.getElementById('continue-btn').onclick = () => {
+  document.getElementById('round-complete').style.display = 'none';
+  document.getElementById('quiz-screen').style.display = 'block';
+
+  if (pileU.length === 0 && pileY.length === 0) {
+    pileX = [];
+    pileU = ALL_QUESTIONS.map((_, i) => i);
+  }
+  buildQueue();
+  nextQuestion();
+  saveState();
+};
+
+initPiles();
+nextQuestion();
+</script>
+</body>
+</html>
