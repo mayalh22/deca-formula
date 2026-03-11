@@ -234,9 +234,14 @@ function nextQuestion() {
 }
 
 function render() {
+
+  if (current === null || current === undefined || !ALL_QUESTIONS[current]) {
+    nextQuestion();
+    return;
+  }
+
   const q = ALL_QUESTIONS[current];
   const total = ALL_QUESTIONS.length;
-  const done = pileX.length + pileY.length + (ALL_QUESTIONS.length - pileU.length - pileX.length - pileY.length);
 
   document.getElementById('count-x').textContent = pileX.length;
   document.getElementById('count-y').textContent = pileY.length;
@@ -267,6 +272,7 @@ function render() {
 function choose(i) {
   if (answered) return;
   answered = true;
+  
   const q = ALL_QUESTIONS[current];
   const btns = document.querySelectorAll('.opt');
   btns.forEach(b => b.disabled = true);
